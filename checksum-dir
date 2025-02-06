@@ -1,0 +1,25 @@
+#!/bin/sh
+set -e
+CHKSUM=sha256sum
+dn="$1"
+if [ -z "$dn" ]; then
+    echo "Usage: '$0' [<path to create checksums for> | <checksum file>]"
+    echo "1. Calculates checksums of all files in the given path recursively."
+    echo "   The checksums are stored with relative paths in a file"
+    echo "   'check_<datetimestamp>.sha256' in the given directory."
+    echo "2. When verifying checksums, it works with relative paths based on"
+    echo "   the checksum file location and absolute paths."
+    exit 1
+fi
+if [ -f "$dn" ]; then
+    echo "Attempting to verify checksum from '$dn':"
+    cd "$(dirname "$dn")"
+    "$CHKSUM" -c "$(basename "$dn")" | grep -v 'OK$' || echo "All good!"
+    exit 0
+fi
+# is a directory? anything else leads to errors anyway
+cd "$dn" || (echo "Could not change dir to '$dn'!"; exit 1)
+fn="check_$(date +%y%m%d%H%M%S).sha256"
+echo "Creating '$(pwd)/$fn':"
+find . -type f -not -name "$fn" -exec "$CHKSUM" -b {} \; | tee "$fn"
+
