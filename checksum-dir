@@ -12,7 +12,7 @@ if [ -z "$dn" ]; then
     exit 1
 fi
 if [ -f "$dn" ]; then
-    echo "Attempting to verify checksum from '$dn':"
+    echo "Verifying checksums from '$dn':"
     cd "$(dirname "$dn")"
     "$CHKSUM" -c "$(basename "$dn")" | grep -v 'OK$' || echo "All good!"
     exit 0
