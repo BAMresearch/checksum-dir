@@ -1,6 +1,5 @@
 #!/bin/sh
 set -e
-CHKSUM=sha256sum
 dn="$1"
 if [ -z "$dn" ]; then
     echo "Usage: '$0' [<path to create checksums for> | <checksum file>]"
@@ -11,10 +10,17 @@ if [ -z "$dn" ]; then
     echo "   the checksum file location and absolute paths."
     exit 1
 fi
+CHK160=/usr/bin/sha1sum
+CHK256=/usr/bin/sha256sum
+CHKB2=/usr/bin/b2sum
 if [ -f "$dn" ]; then
     echo "Verifying checksums from '$dn':"
+    grep -q '^[A-Fa-f0-9]\{40\}\s' "$dn" && CHK="$CHK160"
+    grep -q '^[A-Fa-f0-9]\{64\}\s' "$dn" && CHK="$CHK256"
+    grep -q '^[A-Fa-f0-9]\{128\}\s' "$dn" && CHK="$CHKB2"
+    [ -z "$CHK" ] && (echo "Checksum algorithm not found!"; exit 1)
     cd "$(dirname "$dn")"
-    "$CHKSUM" -c "$(basename "$dn")" | grep -v 'OK$' || echo "All good!"
+    "$CHK" -c "$(basename "$dn")" | grep -v 'OK$' || echo "All good!"
     notCovered="$(find . -type f -printf '%P\n' | xargs -I{} sh -c "grep -q '{}' '$dn' || echo '{}'" | grep -v "$dn")"
     [ -z "$notCovered" ] || (echo "Files not covered:"; echo "$notCovered")
     exit 0
@@ -23,5 +29,5 @@ fi
 cd "$dn" || (echo "Could not change dir to '$dn'!"; exit 1)
 fn="check_$(date +%y%m%d%H%M%S).sha256"
 echo "Creating '$(pwd)/$fn':"
-find . -type f -not -name "$fn" -exec "$CHKSUM" -b {} \; | tee "$fn"
+find . -type f -not -name "$fn" -exec "$CHK256" -b {} \; | tee "$fn"
 
