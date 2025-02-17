@@ -15,7 +15,7 @@ if [ -f "$dn" ]; then
     echo "Verifying checksums from '$dn':"
     cd "$(dirname "$dn")"
     "$CHKSUM" -c "$(basename "$dn")" | grep -v 'OK$' || echo "All good!"
-    notCovered="$(find . -type f \( -exec grep -q {} "$dn" \; -or -exec echo {} \; \) | grep -v "$dn")"
+    notCovered="$(find . -type f -printf '%P\n' | xargs -I{} sh -c "grep -q '{}' '$dn' || echo '{}'" | grep -v "$dn")"
     [ -z "$notCovered" ] || (echo "Files not covered:"; echo "$notCovered")
     exit 0
 fi
