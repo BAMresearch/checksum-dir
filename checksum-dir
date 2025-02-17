@@ -13,15 +13,22 @@ fi
 CHK160=/usr/bin/sha1sum
 CHK256=/usr/bin/sha256sum
 CHKB2=/usr/bin/b2sum
+GREP=/usr/bin/grep
+FIND=/usr/bin/find
+# Check that the required commands exist
+for cmd in $CHK160 $CHK256 $CHKB2 $GREP $FIND; do
+    command -v $cmd > /dev/null || (echo "Required command '$cmd' not found! Giving up."; exit 1)
+done
+# Switch behavior depending on argument being a file or a directory
 if [ -f "$dn" ]; then
     echo "Verifying checksums from '$dn':"
-    grep -q '^[A-Fa-f0-9]\{40\}\s' "$dn" && CHK="$CHK160"
-    grep -q '^[A-Fa-f0-9]\{64\}\s' "$dn" && CHK="$CHK256"
-    grep -q '^[A-Fa-f0-9]\{128\}\s' "$dn" && CHK="$CHKB2"
+    $GREP -q '^[A-Fa-f0-9]\{40\}\s' "$dn" && CHK="$CHK160"
+    $GREP -q '^[A-Fa-f0-9]\{64\}\s' "$dn" && CHK="$CHK256"
+    $GREP -q '^[A-Fa-f0-9]\{128\}\s' "$dn" && CHK="$CHKB2"
     [ -z "$CHK" ] && (echo "Checksum algorithm not found!"; exit 1)
     cd "$(dirname "$dn")"
-    "$CHK" -c "$(basename "$dn")" | grep -v 'OK$' || echo "All good!"
-    notCovered="$(find . -type f -printf '%P\n' | xargs -I{} sh -c "grep -q '{}' '$dn' || echo '{}'" | grep -v "$dn")"
+    "$CHK" -c "$(basename "$dn")" | $GREP -v 'OK$' || echo "All good!"
+    notCovered="$($FIND . -type f -printf '%P\n' | xargs -I{} sh -c "$GREP -q '{}' '$dn' || echo '{}'" | $GREP -v "$dn")"
     [ -z "$notCovered" ] || (echo "Files not covered:"; echo "$notCovered")
     exit 0
 fi
@@ -29,5 +36,5 @@ fi
 cd "$dn" || (echo "Could not change dir to '$dn'!"; exit 1)
 fn="check_$(date +%y%m%d%H%M%S).sha256"
 echo "Creating '$(pwd)/$fn':"
-find . -type f -not -name "$fn" -exec "$CHK256" -b {} \; | tee "$fn"
+$FIND . -type f -not -name "$fn" -exec "$CHK256" -b {} \; | tee "$fn"
 
