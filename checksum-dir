@@ -27,8 +27,9 @@ if [ -f "$dn" ]; then
     $GREP -q '^[A-Fa-f0-9]\{128\}\s' "$dn" && CHK="$CHKB2"
     [ -z "$CHK" ] && (echo "Checksum algorithm not found!"; exit 1)
     cd "$(dirname "$dn")"
-    "$CHK" -c "$(basename "$dn")" | $GREP -v 'OK$' || echo "All good!"
-    notCovered="$($FIND . -type f -printf '%P\n' | xargs -I{} sh -c "$GREP -q '{}' '$dn' || echo '{}'" | $GREP -v "$dn")"
+    fn="$(basename "$dn")"
+    "$CHK" -c "$fn" | $GREP -v 'OK$' || echo "All good!"
+    notCovered="$($FIND . -type f -printf '%P\n' | xargs -I{} sh -c "$GREP -q '{}' '$fn' || echo '{}'" | $GREP -v "$fn")"
     [ -z "$notCovered" ] || (echo "Files not covered:"; echo "$notCovered")
     exit 0
 fi
